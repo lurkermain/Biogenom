@@ -20,7 +20,7 @@ namespace Biogenom.Controllers
 
 		// Метод 1: Initial Detection
 		[HttpPost("detect-objects")]
-		public async Task<ActionResult<DetectObjectsResponse>> DetectObjects([FromBody] DetectObjectsRequest request)
+		public async Task<ActionResult<DetectObjectsResponse>> DetectObjects([FromForm] DetectObjectsRequest request)
 		{
 			// a. & b. Скачиваем фото
 			byte[] imageBytes;
@@ -34,7 +34,7 @@ namespace Biogenom.Controllers
 			}
 
 			// c. & d. Отправляем в GigaChat и парсим
-			var detectedNames = await _aiService.DetectObjectsAsync(imageBytes);
+			var detectedNames = await _aiService.DetectObjectsAsync(imageBytes, request.ImageUrl);
 
 			// e. Сохраняем в БД
 			var analysisRequest = new AnalysisRequest
@@ -57,7 +57,7 @@ namespace Biogenom.Controllers
 
 		// Метод 2: Material Analysis
 		[HttpPost("detect-materials")]
-		public async Task<ActionResult<List<MaterialResult>>> DetectMaterials([FromBody] AnalyzeMaterialsRequest request)
+		public async Task<ActionResult<List<MaterialResult>>> DetectMaterials([FromForm] AnalyzeMaterialsRequest request)
 		{
 			// Находим исходный запрос, чтобы получить URL
 			var analysisRecord = await _context.AnalysisRequests
@@ -71,7 +71,7 @@ namespace Biogenom.Controllers
 			byte[] imageBytes = await _aiService.DownloadImageAsync(analysisRecord.ImageUrl);
 
 			// b. & c. Отправляем в AI скорректированный список предметов и фото
-			var materialsResult = await _aiService.DetectMaterialsAsync(imageBytes, request.ConfirmedObjects);
+			var materialsResult = await _aiService.DetectMaterialsAsync(imageBytes,analysisRecord.ImageUrl, request.ConfirmedObjects);
 
 			// d. Сохраняем в БД в нормализованном виде
 			// Сначала удаляем старые объекты для этого реквеста, если был повторный вызов
